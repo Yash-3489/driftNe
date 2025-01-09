@@ -1,13 +1,12 @@
-// Keywords: sexual
+// Keywords: separate sexes
+// Varying sex ratios being simulated, with sex ratio (S) & N per simulation being defined while running the simulation
 
 initialize() {
-	defineConstant("L", 1e6); //Genome size
-	defineConstant("N", 10000); //Population size
-	defineConstant("S", 0.7); //Sex ratio
-	initializeSLiMOptions(keepPedigrees = T, nucleotideBased=T); //pedigree imp for reproInds
-	initializeAncestralNucleotides(randomNucleotides(L)); //all inds, same genome at gen 1
-	initializeMutationTypeNuc("m1", 0.5, "f", 0.0); //neutral muts
-	initializeGenomicElementType("g1", m1, 1.0, mmJukesCantor(0.4e-8));
+	defineConstant("L", 1e8); //genome size
+	initializeSLiMOptions(keepPedigrees = T, nucleotideBased=T); //pedigree important to find number of reproducing individuals per generation (ReproInds)
+	initializeAncestralNucleotides(randomNucleotides(L)); //all individuals have the same genome at Gen = 1
+	initializeMutationTypeNuc("m1", 0.5, "f", 0.0); //neutral mutations
+	initializeGenomicElementType("g1", m1, 1.0, mmJukesCantor(0.4e-8)); 
 	initializeGenomicElement(g1, 0, L-1);
 	initializeRecombinationRate(1e-8);
 }
@@ -17,7 +16,7 @@ function (lifso) Seg_sites(lifso<Subpopulation> n){
 	return length(sim.mutationCounts(n));
 }
 
-//Function for defining sex-ratio (male/N)
+//Function for creating tagL0 vectors as per sex-ratio. Converts sex ratio input to a vector of T & F such that their proportions match the defined sex ratios
 function (logical) Sex_ratio(float n){
 	x = asInteger(n*N);
 	return c(rep(T,x),rep(F,N-x)); //female = F, male = T
@@ -29,8 +28,7 @@ function (logical) Sex_ratio(float n){
 	sim.addSubpop("p1", N);
 	p1.individuals.tagL0 = Sex_ratio(S);
 	//Results in equal sex ratios
-	log = community.createLogFile(
-	"C:/APU/Honors/Data/Sexual_pops/10k/testLog0_7M.txt", sep = "\t", logInterval = 10);
+	log = community.createLogFile(paste0(N,"_sepsex_",S,".txt"), sep = "\t", logInterval = 10);
 	log.addCycle();
 	log.addCustomColumn("Heterozygosity", "calcHeterozygosity(p1.genomes);");
 	log.addCustomColumn("Watt_theta", "calcWattersonsTheta(p1.genomes);");	
@@ -48,9 +46,5 @@ modifyChild() {
 }
 
 
-100000 late() { sim.simulationFinished(); }
+50000 late() {p1.genomes.outputVCF(paste0(N,"_ss_",S,".vcf"));}
 
-
-	//sim.outputFull("C:/APU/Honors/SLiM_Output/Sexual_pops/0.5/N=0.1k/Burn_In.txt"); }
-	
-//Can use tagL0 instead of simulating sex chromosomes to simulate sexes. See 12.5 SLiM manual
